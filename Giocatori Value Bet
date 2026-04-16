@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SisalProps AI - Generatore di Prompt</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@300;500;700;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #060f08; color: #e2e8f0; font-family: 'Barlow Condensed', sans-serif; padding: 20px; }
+        .app { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 28px; border-bottom: 2px solid #7dc832; padding-bottom: 15px; }
+        .header h1 { font-size: 2.5rem; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; }
+        .header h1 span { color: #7dc832; }
+        .card { background: #0a1a0c; border: 1px solid #1a3020; border-radius: 8px; padding: 20px; margin-bottom: 16px; position: relative; }
+        .card-title { font-size: 0.8rem; letter-spacing: 3px; text-transform: uppercase; color: #7dc832; margin-bottom: 15px; font-weight: 700; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .field label { font-size: 0.65rem; text-transform: uppercase; color: #475569; font-weight: 700; }
+        input, textarea { background: #0d1f10; border: 1px solid #1a3020; border-radius: 4px; padding: 10px; color: #fff; font-family: 'Space Mono', monospace; outline: none; width: 100%; }
+        input:focus { border-color: #7dc832; }
+        .btn-add { width: 100%; padding: 15px; background: transparent; color: #7dc832; border: 1px dashed #7dc832; border-radius: 6px; cursor: pointer; font-weight: 700; text-transform: uppercase; margin-bottom: 20px; }
+        .btn-generate { width: 100%; padding: 20px; background: #7dc832; color: #060f08; border: none; border-radius: 6px; font-size: 1.2rem; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(125, 200, 50, 0.3); }
+        .prompt-result { background: #111; border: 1px solid #7dc832; padding: 20px; border-radius: 8px; margin-top: 25px; }
+        .prompt-text { white-space: pre-wrap; font-family: 'Space Mono', monospace; font-size: 0.85rem; color: #a5f3fc; max-height: 400px; overflow-y: auto; padding: 10px; background: #000; }
+        .copy-notice { color: #7dc832; font-size: 0.8rem; margin-top: 10px; text-align: center; font-weight: 700; }
+        .remove-btn { position: absolute; top: 10px; right: 10px; background: #ff4455; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const emptyPlayer = () => ({
+            id: Date.now() + Math.random(),
+            name: "", team: "", goals: "", matches: "", shots: "", sot: "", fouls: "",
+            q_marcatore: "", q_tiri: "", q_tiri_linea: ""
+        });
+
+        function App() {
+            const [match, setMatch] = useState({ home: "", away: "" });
+            const [players, setPlayers] = useState([emptyPlayer()]);
+            const [finalPrompt, setFinalPrompt] = useState("");
+
+            const updatePlayer = (id, field, value) => {
+                setPlayers(players.map(p => p.id === id ? { ...p, [field]: value } : p));
+            };
+
+            const generate = () => {
+                let text = `Sei un analista esperto di betting. Analizza la partita ${match.home} vs ${match.away}.\n\n`;
+                text += `DATI GIOCATORI:\n`;
+                players.forEach(p => {
+                    text += `- ${p.name} (${p.team}): ${p.goals} gol in ${p.matches} partite. Media tiri: ${p.shots}, in porta: ${p.sot}. Falli commessi: ${p.fouls}.\n`;
+                    text += `  QUOTE SISAL: Marcatore @${p.q_marcatore}, Over ${p.q_tiri_linea} tiri in porta @${p.q_tiri}.\n\n`;
+                });
+                text += `OBIETTIVO: Trova le "Value Bets" dove la probabilità statistica è superiore alla quota offerta da Sisal. Calcola l'Edge % e dammi i 3 consigli migliori motivati.`;
+                setFinalPrompt(text);
+            };
+
+            return (
+                <div className="app">
+                    <div className="header">
+                        <h1><span>Sisal</span>Props AI</h1>
+                        <p>Generatore di Analisi Valore</p>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-title">⚽ Dati Partita</div>
+                        <div className="grid">
+                            <div className="field"><label>Squadra Casa</label><input type="text" onChange={e => setMatch({...match, home: e.target.value})} /></div>
+                            <div className="field"><label>Squadra Ospite</label><input type="text" onChange={e => setMatch({...match, away: e.target.value})} /></div>
+                        </div>
+                    </div>
+
+                    {players.map((p, index) => (
+                        <div className="card" key={p.id}>
+                            <button className="remove-btn" onClick={() => setPlayers(players.filter(pl => pl.id !== p.id))}>ELIMINA</button>
+                            <div className="card-title">👤 Giocatore {index + 1}</div>
+                            <div className="grid">
+                                <div className="field"><label>Nome</label><input type="text" onChange={e => updatePlayer(p.id, "name", e.target.value)} /></div>
+                                <div className="field"><label>Squadra</label><input type="text" onChange={e => updatePlayer(p.id, "team", e.target.value)} /></div>
+                                <div className="field"><label>Gol Stagione</label><input type="number" onChange={e => updatePlayer(p.id, "goals", e.target.value)} /></div>
+                                <div className="field"><label>Partite</label><input type="number" onChange={e => updatePlayer(p.id, "matches", e.target.value)} /></div>
+                                <div className="field"><label>Media Tiri</label><input type="text" onChange={e => updatePlayer(p.id, "shots", e.target.value)} /></div>
+                                <div className="field"><label>Media in Porta</label><input type="text" onChange={e => updatePlayer(p.id, "sot", e.target.value)} /></div>
+                                <div className="field"><label>Media Falli</label><input type="text" onChange={e => updatePlayer(p.id, "fouls", e.target.value)} /></div>
+                            </div>
+                            <div className="card-title" style={{marginTop: "15px", color: "#4ade80"}}>💰 Quote Sisal</div>
+                            <div className="grid">
+                                <div className="field"><label>Quota Marcatore</label><input type="text" onChange={e => updatePlayer(p.id, "q_marcatore", e.target.value)} /></div>
+                                <div className="field"><label>Linea Tiri (es 0.5)</label><input type="text" onChange={e => updatePlayer(p.id, "q_tiri_linea", e.target.value)} /></div>
+                                <div className="field"><label>Quota Tiri</label><input type="text" onChange={e => updatePlayer(p.id, "q_tiri", e.target.value)} /></div>
+                            </div>
+                        </div>
+                    ))}
+
+                    <button className="btn-add" onClick={() => setPlayers([...players, emptyPlayer()])}>+ Aggiungi Giocatore</button>
+                    
+                    <button className="btn-generate" onClick={generate}>⚡ Genera Prompt per l'IA</button>
+
+                    {finalPrompt && (
+                        <div className="prompt-result">
+                            <div className="card-title">Copia e incolla questo su Claude o ChatGPT:</div>
+                            <div className="prompt-text">{finalPrompt}</div>
+                            <div className="copy-notice">↑ Seleziona tutto, copia e incollalo nella chat dell'IA!</div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
